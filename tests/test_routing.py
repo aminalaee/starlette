@@ -4,7 +4,6 @@ import uuid
 import pytest
 
 from starlette.applications import Starlette
-from starlette.requests import Request
 from starlette.responses import JSONResponse, PlainTextResponse, Response
 from starlette.routing import Host, Mount, NoMatchFound, Route, Router, WebSocketRoute
 from starlette.websockets import WebSocket, WebSocketDisconnect
@@ -486,8 +485,8 @@ def test_subdomain_reverse_urls():
 async def echo_urls(request):
     return JSONResponse(
         {
-            "index": request.url_for("index"),
-            "submount": request.url_for("mount:submount"),
+            "index": str(request.url_for("index")),
+            "submount": str(request.url_for("mount:submount")),
         }
     )
 
@@ -701,21 +700,3 @@ def test_duplicated_param_names():
         match="Duplicated param names id, name at path /{id}/{name}/{id}/{name}",
     ):
         Route("/{id}/{name}/{id}/{name}", user)
-
-
-def test_url_for_with_query_params(test_client_factory):
-    def echo_queryparams_urls(request: Request):
-        return JSONResponse(
-            {
-                "queryparams": request.url_for("index", query_params={"Foo": "Bar"}),
-            }
-        )
-
-    routes = [Route("/", echo_queryparams_urls, name="index", methods=["GET"])]
-    app = Starlette(routes=routes)
-    client = test_client_factory(app)
-    response = client.get("/")
-
-    assert response.json() == {
-        "queryparams": "http://testserver/?Foo=Bar",
-    }
